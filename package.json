@@ -15,5 +15,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.6.5"
+  "packageManager": "pnpm@10.6.5",
+  "dependencies": {
+    "@kixelated/hang": "^0.3.12",
+    "@kixelated/moq": "^0.7.6",
+    "@types/three": "^0.175.0",
+    "msgpackr": "^1.11.2"
+  }
 }

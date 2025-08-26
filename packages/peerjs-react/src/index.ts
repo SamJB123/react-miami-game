@@ -56,3 +56,5 @@ export function createPeerParty<PartyEvents extends Record<string, unknown>>(opt
 
   return { instance, useOnMessage, useSendMessage, usePeer, usePeerEvent }
 }
+
+export type { MessagePayload } from "./peer-party"

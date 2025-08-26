@@ -9,16 +9,17 @@
     "dist"
   ],
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "vite build && tsc --emitDeclarationOnly"
+    "dev": "pnpm exec vite build --watch",
+    "build": "pnpm exec vite build && pnpm exec tsc --emitDeclarationOnly"
   },
   "devDependencies": {
     "@types/node": "^20.9.0",
-    "@types/react": "^18.3.20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.4.0",
-    "peerjs": "^1.5.4",
-    "react": "^18.2.0",
-    "typescript": "^5.2.2",
+    "peerjs": "^1.5.5",
+    "react": "^19",
+    "typescript": "^5",
     "vite": "^6.3.1",
     "vite-plugin-dts": "^4.5.3"
   },

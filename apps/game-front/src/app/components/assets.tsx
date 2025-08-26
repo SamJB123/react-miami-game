@@ -1,9 +1,18 @@
 "use client";
 
-import { QueryType } from "@/lib/basehub";
 import { createContext, useContext, useRef } from "react";
 
-const AssetContext = createContext<QueryType | null>(null);
+export type Assets = {
+  models: {
+    track: { url: string };
+    vehicle: { url: string };
+    logo: { url: string };
+    heroBackground: { url: string };
+    bodyMobile: { url: string };
+  };
+};
+
+const AssetContext = createContext<Assets | null>(null);
 
 export function useAssets() {
   const assets = useContext(AssetContext);
@@ -17,7 +26,7 @@ export function useAssets() {
 
 interface AssetsProviderProps {
   children: React.ReactNode;
-  assets: QueryType;
+  assets: Assets;
 }
 
 export const AssetsProvider = ({ children, assets }: AssetsProviderProps) => (

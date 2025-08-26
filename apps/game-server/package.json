@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"pnpm run build-watch\" \"partykit dev\"",
-    "build-watch": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --watch",
-    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js",
+    "dev": "pnpm exec concurrently \"pnpm run build-watch\" \"pnpm exec wait-on dist/index.js dist/moq-broker-party.js && pnpm exec partykit dev\"",
+    "build-watch": "pnpm exec esbuild src/index.ts src/moq-broker-party.ts --bundle --platform=node --format=esm --outdir=dist --watch",
+    "build": "pnpm exec esbuild src/index.ts src/moq-broker-party.ts --bundle --platform=node --format=esm --outdir=dist",
     "deploy-server": "pnpm run build && npx partykit deploy"
   },
   "devDependencies": {
@@ -14,7 +14,8 @@
     "@types/node": "^20.9.0",
     "concurrently": "^9.1.2",
     "esbuild": "^0.20.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "wait-on": "^8.0.4"
   },
   "dependencies": {
     "cbor-x": "^1.6.0",

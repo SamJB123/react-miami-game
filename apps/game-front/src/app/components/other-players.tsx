@@ -11,6 +11,8 @@ import { CarBody, MAX_VEHICLE_INSTANCES } from "./vehicle/body";
 import { ServerMessage, type PresenceType } from "game-schemas";
 import { unpackMessage } from "@/lib/pack";
 import { create } from "zustand";
+import { useMoQParty } from "./moq-party-provider";
+import type { MoQGameStreamState } from "@/hooks/useMoQGameStream";
 
 const presenceRef = {
   current: {} as Record<string, PresenceType>,
@@ -32,8 +34,26 @@ export function OtherPlayers() {
 
   const party = useParty();
   const selfId = party.id;
+  
+  // Get MoQ stream if available
+  let moqStream: MoQGameStreamState | null = null;
+  let forceMoQ = false;
+  try {
+    const moqParty = useMoQParty();
+    moqStream = moqParty.moqStream;
+    // Check if we're in force MoQ mode from env
+    forceMoQ = process.env.NEXT_PUBLIC_MOQ_FORCE === "true";
+  } catch {
+    // MoQPartyProvider not available, fallback to WebSocket only
+  }
 
   useEffect(() => {
+    // Skip WebSocket handling if in force MoQ mode
+    if (forceMoQ) {
+      console.log("[MoQ Force Mode] WebSocket message handling disabled");
+      return;
+    }
+    
     const controller = new AbortController();
     const signal = controller.signal;
 
@@ -102,7 +122,28 @@ export function OtherPlayers() {
       controller.abort();
       party.removeEventListener("message", messageHandler);
     };
-  }, [party, selfId]);
+  }, [party, selfId, forceMoQ]);
+  
+  // Subscribe to MoQ state updates directly (no useEffect needed)
+  useEffect(() => {
+    if (!moqStream || !moqStream.isMoQReady) return;
+    // Subscribe to incoming MoQ updates to keep presence and ids in sync
+    const unsubscribe = moqStream.debugEvents.onIncoming(() => {
+      // Copy latest map into presenceRef
+      moqStream.remoteStates.forEach((presence: PresenceType, playerId: string) => {
+        presenceRef.current[playerId] = presence;
+      });
+      // Keep player list in sync
+      const ids = Array.from(moqStream.remoteStates.keys());
+      useServerStatus.setState({ playerIds: ids });
+    });
+    // Also run once immediately
+    moqStream.remoteStates.forEach((presence: PresenceType, playerId: string) => {
+      presenceRef.current[playerId] = presence;
+    });
+    useServerStatus.setState({ playerIds: Array.from(moqStream.remoteStates.keys()) });
+    return unsubscribe;
+  }, [moqStream?.isMoQReady]);
 
   return (
     <>

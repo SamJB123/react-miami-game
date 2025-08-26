@@ -13,13 +13,26 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "baseUrl": ".",
+    "types": [
+      "@react-three/fiber",
+      "@types/node",
+      "@types/react",
+      "@types/react-dom",
+      "three",
+      "@react-three/rapier",
+      "@react-three/drei"
+    ],
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "game-schemas": ["../../packages/game-schemas/src"],
+      "peerjs-react": ["../../packages/peerjs-react/src/index.ts"],
+      "peerjs-react/*": ["../../packages/peerjs-react/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

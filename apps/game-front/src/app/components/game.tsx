@@ -10,7 +10,8 @@ import {
 import { memo, Suspense, useEffect } from "react";
 import usePartySocket from "partysocket/react";
 import { Player } from "./player";
-import { PartyProvider } from "./use-party";
+import { MoQPartyProvider } from "./moq-party-provider";
+import { MoQDebugOverlay3D } from "./moq-debug-overlay-3d";
 import { OtherPlayers } from "./other-players";
 import { Physics } from "@react-three/rapier";
 import { Ground } from "./ground";
@@ -54,6 +55,10 @@ function Game({ roomId }: { roomId: string }) {
     room: roomId,
   });
 
+  // Get player ID from socket
+  const playerId = socket.id;
+  const playerName = "Player-" + playerId.slice(0, 4);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const urlParams = new URLSearchParams(window.location.search);
@@ -61,6 +66,18 @@ function Game({ roomId }: { roomId: string }) {
     const debug = urlParams.has("debug");
     if (debug) useGame.setState({ debug: true });
   }, []);
+
+  // Check if MoQ should be enabled (via URL param or env var)
+  const useMoQ = typeof window !== "undefined" && 
+    (new URLSearchParams(window.location.search).has("moq") || 
+     process.env.NEXT_PUBLIC_USE_MOQ === "true" ||
+     process.env.NEXT_PUBLIC_MOQ_FORCE === "true");
+     
+  // Force MoQ mode - no WebSocket fallback
+  const forceMoQ = process.env.NEXT_PUBLIC_MOQ_FORCE === "true";
+  
+  // Check if MoQ debug overlay should be shown
+  const showMoQDebug = useMoQ; // Show debug when MoQ is enabled
 
   useEffect(() => {
     const initPlayer: InitUserActionType = {
@@ -98,7 +115,14 @@ function Game({ roomId }: { roomId: string }) {
     <Physics interpolate timeStep={1 / 60}>
       <PerspectiveCamera makeDefault position={[0, 0, 0]} fov={50} />
       <KeyboardControls map={controlMap}>
-        <PartyProvider socket={socket}>
+        <MoQPartyProvider 
+          socket={socket}
+          roomId={roomId}
+          playerId={playerId}
+          playerName={playerName}
+          useMoQ={useMoQ}
+          forceMoQ={forceMoQ}
+        >
           <Suspense fallback={null}>
             <CarBodyInstancer>
               <Player />
@@ -118,7 +142,8 @@ function Game({ roomId }: { roomId: string }) {
               <meshBasicMaterial color="#343434" />
             </mesh>
           </Environment>
-        </PartyProvider>
+          <MoQDebugOverlay3D enabled={showMoQDebug} />
+        </MoQPartyProvider>
         {debug && <WasdControls />}
       </KeyboardControls>
     </Physics>

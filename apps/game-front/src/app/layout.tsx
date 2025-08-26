@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AssetsProvider } from "./components/assets";
-import { client } from "@/lib/basehub";
-import { assetsQuery } from "@/lib/basehub";
+import { AssetsProvider, type Assets } from "./components/assets";
 import { cn } from "@/lib/utils";
 import { OverscrollPrevent } from "./components/utils/overscroll-prevent";
 import { Analytics } from "@vercel/analytics/react";
@@ -28,7 +26,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const assetsResult = await client().query(assetsQuery);
+  const assetsResult: Assets = {
+    models: {
+      track: { url: "/game-track.glb" },
+      vehicle: { url: "/auto1.glb" },
+      logo: { url: "/react-miami-logo.png" },
+      heroBackground: { url: "/awesome-background.webp" },
+      bodyMobile: { url: "/txmobil.jpg" },
+    },
+  };
 
   return (
     <html lang="en">

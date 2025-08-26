@@ -32,6 +32,9 @@ import { CAR_DIMENSIONS, WHEEL } from "./constants";
 import { UpdatePresenceActionType } from "game-schemas";
 import { useParty } from "../use-party";
 import { packMessage } from "@/lib/pack";
+import { useMoQParty } from "../moq-party-provider";
+import type { MessagePayload } from "peerjs-react";
+import type { MoQGameStreamState } from "@/hooks/useMoQGameStream";
 
 const PLAYER_UPDATE_FPS = 15;
 
@@ -92,6 +95,18 @@ export const CarController = forwardRef<THREE.Group, unknown>(
 
     // update multiplayer
     const party = useParty();
+    
+    // Get MoQ stream if available
+    let moqStream: MoQGameStreamState | null = null;
+    let forceMoQ = false;
+    try {
+      const moqParty = useMoQParty();
+      moqStream = moqParty.moqStream;
+      // Check if we're in force MoQ mode from env
+      forceMoQ = process.env.NEXT_PUBLIC_MOQ_FORCE === "true";
+    } catch {
+      // MoQPartyProvider not available, fallback to WebSocket only
+    }
 
     const updatePosition = useMemo(() => {
       const newPresence = {
@@ -136,9 +151,18 @@ export const CarController = forwardRef<THREE.Group, unknown>(
         newPresence.payload.wheel.y = controllerVectors.visibleSteering.current;
         newPresence.payload.timestamp = performance.now();
 
-        party.send(packMessage(newPresence));
+        // Use MoQ if available, otherwise fallback to WebSocket
+        if (moqStream && moqStream.isMoQReady) {
+          moqStream.publishGameState(newPresence.payload);
+        } else if (!forceMoQ) {
+          // Only fallback to WebSocket if not in force MoQ mode
+          party.send(packMessage(newPresence));
+        } else {
+          // In force MoQ mode but MoQ not ready - log error
+          console.error("[MoQ Force Mode] Cannot send update - MoQ not ready and WebSocket fallback disabled");
+        }
       }, 1000 / PLAYER_UPDATE_FPS);
-    }, [party]);
+    }, [party, moqStream, forceMoQ]);
 
     useFrame((_, delta) => {
       if (!groupRef.current) return;
@@ -164,15 +188,15 @@ export const CarController = forwardRef<THREE.Group, unknown>(
       }
     });
 
-    useOnControlsMessage("steeringAngle", (message) => {
+    useOnControlsMessage("steeringAngle", (message: MessagePayload<"steeringAngle", number>) => {
       controllerVectors.joystickRotation.current = message.data;
     });
 
-    useOnControlsMessage("acceleration", (message) => {
+    useOnControlsMessage("acceleration", (message: MessagePayload<"acceleration", boolean>) => {
       controllerVectors.joystickAcceleration.current = message.data;
     });
 
-    useOnControlsMessage("brake", (message) => {
+    useOnControlsMessage("brake", (message: MessagePayload<"brake", boolean>) => {
       controllerVectors.joystickBrake.current = message.data;
     });
 

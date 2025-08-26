@@ -72,9 +72,7 @@ export const useDeviceOrientation = ({
     const handleOrientation = (event: DeviceOrientationEvent) => {
       // Check if essential properties exist to ensure it's a valid event
       if (event.alpha === null && event.beta === null && event.gamma === null) {
-        console.warn("Received DeviceOrientationEvent with null values.");
-        // Optionally handle this case, maybe show a different error or retry permission
-        // For now, we just ignore the event.
+        // Silently ignore null events - this is normal on desktop or when permission hasn't been granted yet
         return;
       }
       onUpdateRef.current(event);
