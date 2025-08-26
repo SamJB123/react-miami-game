@@ -124,8 +124,14 @@ export function useMoQGameStream({
         const data = JSON.parse(event.data as string) as BrokerUpdate;
         
         if (data.type === "broker_update") {
-          // Filter out self from participants
-          const otherParticipants = data.participants.filter(p => p.id !== playerId);
+          // Filter out self from participants with multiple checks
+          const otherParticipants = data.participants.filter(p => {
+            const isSelf = p.id === playerId || p.moqPath === `game/${roomId}/${playerId}`;
+            if (isSelf) {
+              console.log(`[PartyKit] Filtered out self participant: ${p.playerName} (${p.id}) at ${p.moqPath}`);
+            }
+            return !isSelf;
+          });
           participantsRef.current = otherParticipants;
           
           // Handle participant changes
@@ -134,6 +140,7 @@ export function useMoQGameStream({
           // Check for new participants
           for (const participant of otherParticipants) {
             if (!prevParticipantsRef.current.has(participant.id)) {
+              console.log(`[PartyKit] New participant joined: ${participant.playerName} (${participant.id}) at ${participant.moqPath}`);
               onParticipantJoin?.(participant);
               // Only create watch broadcast if MoQ is ready
               if (moqConnectionRef.current && isMoQReady) {
@@ -215,7 +222,7 @@ export function useMoQGameStream({
         }
 
         setIsMoQReady(true);
-        console.log("[MoQ Game] MoQ connection established with broadcast:", broadcastPath);
+        console.log(`[MoQ Game] MoQ connection established with broadcast: ${broadcastPath} (our player: ${playerId})`);
         
       } catch (error) {
         console.error("[MoQ Game] Failed to initialize MoQ:", error);
@@ -247,17 +254,29 @@ export function useMoQGameStream({
     // Create watch broadcast for a participant
   const createWatchBroadcast = useCallback(async (participant: MoQParticipant, retryCount = 0) => {
     if (!moqConnectionRef.current) return;
-    if (participant.id === playerId) return; // Don't watch self
+
+    // Multiple self-checks to prevent self-subscription
+    if (participant.id === playerId) {
+      console.log(`[MoQ Game] BLOCKED: Participant ID matches self (${participant.id})`);
+      return;
+    }
+
+    // Check if this is our broadcast path
+    const ourPath = `game/${roomId}/${playerId}`;
+    if (participant.moqPath === ourPath) {
+      console.log(`[MoQ Game] BLOCKED: Participant path matches self (${participant.moqPath})`);
+      return;
+    }
+
+    // Additional check: if participant name contains our player ID (but not just "Player-" prefix)
+    if (participant.playerName.includes(playerId) && playerId.length > 8) {
+      console.log(`[MoQ Game] BLOCKED: Participant name contains our player ID (${participant.playerName})`);
+      return;
+    }
 
     try {
+      console.log(`[MoQ Game] Creating watch broadcast for ${participant.playerName} (${participant.id}) at ${participant.moqPath}`);
       const peerPath = Moq.Path.from(...participant.moqPath.split("/"));
-
-      // Double-check we're not watching ourselves (compare full paths)
-      const ourPath = `game/${roomId}/${playerId}`;
-      if (participant.moqPath === ourPath) {
-        console.warn(`[MoQ Game] Skipping self-watch for ${participant.playerName}`);
-        return;
-      }
 
       const watchBroadcast = new Watch.Broadcast(moqConnectionRef.current, {
         enabled: true,

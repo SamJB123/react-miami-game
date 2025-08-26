@@ -114,11 +114,11 @@ export function MoQDebugOverlay3D({ enabled = false }: { enabled?: boolean }) {
   
   return (
     <Html
-      position={[0, 2, -5]}
+      position={[0, 4, -15]}
       transform
       occlude
       style={{
-        width: '600px',
+        width: '300px',
         userSelect: 'none',
         pointerEvents: isMinimized ? 'auto' : 'auto',
       }}
